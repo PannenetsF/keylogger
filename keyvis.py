@@ -115,13 +115,14 @@ def count_norm(keycounts: dict, key2keycode: dict):
     for k, v in keycounts.items():
         if v == 0:
             color = white
-        ratio = v / max_counts
-        color = (
-            int(light_blue[0] + (dark_red[0] - light_blue[0]) * ratio),
-            int(light_blue[1] + (dark_red[1] - light_blue[1]) * ratio),
-            int(light_blue[2] + (dark_red[2] - light_blue[2]) * ratio),
-        )
-        cnt2color[k] = color
+        else:
+            ratio = v / max_counts
+            color = (
+                int(light_blue[0] + (dark_red[0] - light_blue[0]) * ratio),
+                int(light_blue[1] + (dark_red[1] - light_blue[1]) * ratio),
+                int(light_blue[2] + (dark_red[2] - light_blue[2]) * ratio),
+            )
+        cnt2color[v] = color
 
     for k, v in key2keycode.items():
         if v not in cnt2color:
@@ -205,9 +206,11 @@ def main():
                 continue
             for xcc in xc.iter():
                 pass
-            color = count2color[keycounts[key_code]]
+            count = keycounts[key_code]
+            color = count2color[count]
             xcc.attrib["fill"] = color_to_hex(color)
-            print(f'{key} {key_code} {keycounts[key_code]} {color}')
+            if keycounts[key_code]:
+                print(f'{key} {key_code} {keycounts[key_code]}')
             # color_to_hex((255, 0, 0))
     # save svg to new file
     xml_tree.write(args.file_prefix + "_out.svg")
