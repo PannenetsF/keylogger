@@ -2,14 +2,14 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <ctime>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <sstream>
 #include <sys/stat.h>
 #include <thread>
-#include <iomanip>
-#include <sstream>
-#include <ctime>
 #include <unistd.h>
 
 class KeyMonitor {
@@ -20,7 +20,6 @@ private:
 
   // 按键计数
   std::map<int, int> keyCounts;
-  std::map<int, int> modifierCounts;
   std::string logDir;
   std::string currentFilename;
   std::mutex filenameMutex;
@@ -64,15 +63,14 @@ private:
   std::string generateFilename() {
     std::tm utc8_tm = getUTCP8Time();
     std::ostringstream oss;
-    oss << logDir << "/" 
-        << (utc8_tm.tm_year + 1900) << "-"
-        << std::setw(2) << std::setfill('0') << (utc8_tm.tm_mon + 1) << "-"
-        << std::setw(2) << std::setfill('0') << utc8_tm.tm_mday << ".log";
+    oss << logDir << "/" << (utc8_tm.tm_year + 1900) << "-" << std::setw(2)
+        << std::setfill('0') << (utc8_tm.tm_mon + 1) << "-" << std::setw(2)
+        << std::setfill('0') << utc8_tm.tm_mday << ".log";
     return oss.str();
   }
 
   // 检查并创建目录
-  void ensureDirectoryExists(const std::string& path) {
+  void ensureDirectoryExists(const std::string &path) {
     if (access(path.c_str(), F_OK) == -1) {
       mkdir(path.c_str(), 0755);
     }
@@ -97,19 +95,19 @@ private:
   // 日期检测线程
   void dateCheckLoop() {
     int lastDay = -1;
-    
+
     while (running) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
-      
+
       std::tm utc8_tm = getUTCP8Time();
       int currentDay = utc8_tm.tm_mday;
-      
+
       if (lastDay != -1 && currentDay != lastDay) {
         // 日期变化，保存当前数据并更新文件名
         saveKeyCountsToFile();
         updateFilename();
       }
-      
+
       lastDay = currentDay;
     }
   }
@@ -118,30 +116,6 @@ private:
   void updateFilename() {
     std::lock_guard<std::mutex> lock(filenameMutex);
     currentFilename = generateFilename();
-  }
-
-  // 打印当前计数
-  void printCurrentCounts() {
-    std::lock_guard<std::mutex> lock(dataMutex);
-
-    std::cout << "\n=== 当前按键统计 ===" << std::endl;
-    std::cout << "修饰键:" << std::endl;
-    for (const auto &m : modifierCounts) {
-      if (modifierKeys.count(m.first)) {
-        std::cout << modifierKeys.at(m.first) << ": " << m.second << std::endl;
-      }
-    }
-
-    std::cout << "\n普通键:" << std::endl;
-    for (const auto &k : keyCounts) {
-      if (keyNames.count(k.first)) {
-        std::cout << keyNames.at(k.first) << "(" << k.first << "): " << k.second
-                  << std::endl;
-      } else {
-        std::cout << "Key(" << k.first << "): " << k.second << std::endl;
-      }
-    }
-    std::cout << "==================\n" << std::endl;
   }
 
   void loadKeyCountsFromFile() {
@@ -183,7 +157,6 @@ public:
     if (dateCheckThread.joinable()) {
       dateCheckThread.join();
     }
-    printCurrentCounts();
   }
 
   void setEventTap(CFMachPortRef tap) { eventTap = tap; }
@@ -201,7 +174,7 @@ public:
 
       // 统计修饰键按下次数
       if (modifierKeys.count(keycode)) {
-        modifierCounts[keycode]++;
+        keyCounts[keycode]++;
         std::cout << "修饰键按下: " << modifierKeys.at(keycode) << std::endl;
       }
 
@@ -275,7 +248,7 @@ CGEventRef eventCallback(CGEventTapProxy proxy, CGEventType type,
   return event;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cerr << "用法: " << argv[0] << " <日志目录>" << std::endl;
     return 1;
