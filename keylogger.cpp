@@ -175,7 +175,7 @@ public:
       // 统计修饰键按下次数
       if (modifierKeys.count(keycode)) {
         keyCounts[keycode]++;
-        std::cout << "修饰键按下: " << modifierKeys.at(keycode) << std::endl;
+        // std::cout << "修饰键按下: " << modifierKeys.at(keycode) << std::endl;
       }
 
       currentFlags = newFlags;
@@ -189,16 +189,16 @@ public:
       UniCharCount len = 0;
       CGEventKeyboardGetUnicodeString(event, 4, &len, chars);
 
-      if (keyNames.count(keycode)) {
-        std::cout << "按键: " << keyNames.at(keycode) << std::endl;
-      } else if (len > 0 && std::isprint(chars[0])) {
-        std::cout << "按键: "
-                  << std::string(reinterpret_cast<char *>(chars), len)
-                  << std::endl;
-      } else {
-        std::cout << "按键: Key(" << keycode << ")" << std::endl;
-      }
-
+      // if (keyNames.count(keycode)) {
+      //   std::cout << "按键: " << keyNames.at(keycode) << std::endl;
+      // } else if (len > 0 && std::isprint(chars[0])) {
+      //   std::cout << "按键: "
+      //             << std::string(reinterpret_cast<char *>(chars), len)
+      //             << std::endl;
+      // } else {
+      //   std::cout << "按键: Key(" << keycode << ")" << std::endl;
+      // }
+      //
       isKeyDownProcessed = true;
     }
 
@@ -305,7 +305,6 @@ int main(int argc, char *argv[]) {
     std::cout << "\n检测到退出信号，正在保存数据..." << std::endl;
     monitor.saveKeyCountsToFile();
   }
-  std::cout << "\n程序退出，打印最终统计结果..." << std::endl;
 
   CFRelease(runLoopSource);
   CFRelease(eventTap);

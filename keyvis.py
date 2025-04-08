@@ -2,6 +2,9 @@ import argparse
 import json
 import os
 import xml.etree.ElementTree as ET
+import matplotlib.pyplot as plt 
+# use cm for color 
+import matplotlib.cm as cm
 
 keycode2key = {
     # 数字键（主键盘区）
@@ -101,33 +104,56 @@ def color_to_hex(color):
     else:
         raise ValueError("Invalid color format")
 
+def rgba_to_hex(rgba):
+    if isinstance(rgba, tuple) and len(rgba) == 4:
+        r, g, b, a = rgba
+        return "#{:02x}{:02x}{:02x}".format(int(r * 255), int(g * 255), int(b * 255)), float(a)
+    else:
+        raise ValueError("Invalid RGBA format")
 
 def count_norm(keycounts: dict, key2keycode: dict):
-    # 0 light blue
-    # max dark red
-    # linear scale
-    white = (255, 255, 255)
-    light_blue = (173, 216, 230)  # 00bfff
-    dark_red = (139, 0, 0)  # 8b0000
+    # use cm's hot_r 
+    cmap = cm.get_cmap("hot_r")
     max_counts = max([v for k, v in keycounts.items() if isinstance(v, int)])
     cnt2color = {}
     # interpolate colors from light blue to dark red, if the count is 0, white
     for k, v in keycounts.items():
-        if v == 0:
-            color = white
-        else:
-            ratio = v / max_counts
-            color = (
-                int(light_blue[0] + (dark_red[0] - light_blue[0]) * ratio),
-                int(light_blue[1] + (dark_red[1] - light_blue[1]) * ratio),
-                int(light_blue[2] + (dark_red[2] - light_blue[2]) * ratio),
-            )
-        cnt2color[v] = color
+        ratio = v / max_counts
+        color = cmap(ratio)
+        cnt2color[v] = rgba_to_hex(color)
 
     for k, v in key2keycode.items():
         if v not in cnt2color:
-            cnt2color[v] = white
+            cnt2color[v] = rgba_to_hex(cmap(0))
     return cnt2color
+
+
+# def count_norm(keycounts: dict, key2keycode: dict):
+#     # 0 light blue
+#     # max dark red
+#     # linear scale
+#     white = (255, 255, 255)
+#     light_blue = (173, 216, 230)  # 00bfff
+#     dark_red = (139, 0, 0)  # 8b0000
+#     max_counts = max([v for k, v in keycounts.items() if isinstance(v, int)])
+#     cnt2color = {}
+#     # interpolate colors from light blue to dark red, if the count is 0, white
+#     for k, v in keycounts.items():
+#         if v == 0:
+#             color = white
+#         else:
+#             ratio = v / max_counts
+#             color = (
+#                 int(light_blue[0] + (dark_red[0] - light_blue[0]) * ratio),
+#                 int(light_blue[1] + (dark_red[1] - light_blue[1]) * ratio),
+#                 int(light_blue[2] + (dark_red[2] - light_blue[2]) * ratio),
+#             )
+#         cnt2color[v] = color
+
+#     for k, v in key2keycode.items():
+#         if v not in cnt2color:
+#             cnt2color[v] = white
+#     return cnt2color
 
 
 def read_log(fn):
@@ -193,7 +219,8 @@ def main():
 
     count2color = count_norm(keycounts, key2keycode)
 
-    print(key_order)
+    # print(key_order)
+    count_info = []
     xml_tree = ET.parse(svg_template_path)
     xml_root = xml_tree.getroot()
     cnt = 0
@@ -207,13 +234,22 @@ def main():
             for xcc in xc.iter():
                 pass
             count = keycounts[key_code]
-            color = count2color[count]
+            color, alpha = count2color[count]
+
+            if key == 'Right':
+                continue
             xcc.attrib["fill"] = color_to_hex(color)
+            xcc.attrib["fill-opacity"] = color_to_hex(color)
             if keycounts[key_code]:
-                print(f'{key} {key_code} {keycounts[key_code]}')
+                count_info.append((key, count))
+                # print(f'{key} {key_code} {keycounts[key_code]}')
             # color_to_hex((255, 0, 0))
     # save svg to new file
     xml_tree.write(args.file_prefix + "_out.svg")
+    # print sorted count_info by count 
+    count_info.sort(key=lambda x: x[1], reverse=True)
+    for k, v in count_info:
+        print(f"{k}: {v}")
 
     assert 0 == len(key_order), f"Mismatch in number of keys: {cnt} vs {len(key_order)}"
 
