@@ -251,6 +251,9 @@ def main():
     for k, v in count_info:
         print(f"{k}: {v}")
 
+    total_cnt = sum([v for k, v in keycounts.items() if isinstance(v, int)])
+    print(f"Total count: {total_cnt}")
+
     assert 0 == len(key_order), f"Mismatch in number of keys: {cnt} vs {len(key_order)}"
 
 
